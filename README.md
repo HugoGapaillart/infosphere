@@ -1,8 +1,8 @@
-# Infosphere - Application d'Événements
+# Infosphere - Application d'Événements 🎉
 
-Application Android en Kotlin avec Firebase pour gérer et découvrir des événements locaux.
+Application Android moderne en **Kotlin** et **Jetpack Compose** avec Firebase pour gérer et découvrir des événements locaux.
 
-## 📋 Fonctionnalités
+## ✨ Fonctionnalités
 
 - **Authentification** : Inscription et connexion avec Firebase Authentication
 - **Gestion d'événements** : 
@@ -14,21 +14,68 @@ Application Android en Kotlin avec Firebase pour gérer et découvrir des évén
   - Voir vos événements créés
   - Événements passés accessibles uniquement par le créateur
 - **Feed personnalisé** : Événements triés du plus récent au plus lointain
+- **Interface moderne** : UI 100% Jetpack Compose avec Material3
+
+## 🏗️ Architecture
+
+### Stack technique
+- **UI** : Jetpack Compose + Material3
+- **Architecture** : MVVM avec StateFlow
+- **Navigation** : Navigation Compose
+- **Backend** : Firebase (Auth, Firestore, Storage)
+- **Async** : Kotlin Coroutines + Flow
+- **Images** : Coil Compose
+
+### Structure du projet
+```
+app/src/main/java/com/infosphere/
+├── models/                     # Data classes
+│   ├── Event.kt
+│   ├── User.kt
+│   ├── City.kt
+│   └── EventType.kt
+├── repository/                 # Firebase repositories
+│   ├── AuthRepository.kt
+│   ├── EventRepository.kt
+│   ├── UserRepository.kt
+│   ├── CityRepository.kt
+│   └── EventTypeRepository.kt
+├── viewmodel/                  # ViewModels avec StateFlow
+│   ├── AuthViewModel.kt
+│   ├── EventViewModel.kt
+│   └── UserProfileViewModel.kt
+├── ui/
+│   ├── screens/               # Écrans Compose
+│   │   ├── LoginScreen.kt
+│   │   ├── HomeScreen.kt
+│   │   └── SearchScreen.kt
+│   ├── components/            # Composants réutilisables
+│   │   └── CommonComponents.kt
+│   ├── navigation/            # Navigation
+│   │   ├── Screen.kt
+│   │   └── InfosphereApp.kt
+│   └── theme/                 # Thème Material3
+│       ├── Color.kt
+│       ├── Type.kt
+│       └── Theme.kt
+└── MainActivity.kt            # Point d'entrée Compose
+```
 
 ## 🚀 Configuration
 
 ### 1. Prérequis
 
-- Android Studio Arctic Fox ou supérieur
+- Android Studio Hedgehog ou supérieur
 - Compte Firebase
 - JDK 11
+- Min SDK: 34
 
 ### 2. Configuration Firebase
 
 1. Créez un projet Firebase sur [Firebase Console](https://console.firebase.google.com)
 2. Ajoutez une application Android avec le package `com.infosphere`
 3. Téléchargez le fichier `google-services.json`
-4. Remplacez le fichier `app/google-services.json` par votre fichier téléchargé
+4. Placez-le dans `app/google-services.json`
 5. Activez les services Firebase :
    - **Authentication** : Email/Password
    - **Cloud Firestore** : Mode production

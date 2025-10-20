@@ -1,14 +1,15 @@
 package com.infosphere.viewmodel
 
 import android.net.Uri
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
 import com.infosphere.models.Event
 import com.infosphere.repository.AuthRepository
 import com.infosphere.repository.EventRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 
@@ -16,17 +17,17 @@ class EventViewModel : ViewModel() {
     private val eventRepository = EventRepository()
     private val authRepository = AuthRepository()
 
-    private val _events = MutableLiveData<List<Event>>()
-    val events: LiveData<List<Event>> = _events
+    private val _events = MutableStateFlow<List<Event>>(emptyList())
+    val events: StateFlow<List<Event>> = _events.asStateFlow()
 
-    private val _userEvents = MutableLiveData<List<Event>>()
-    val userEvents: LiveData<List<Event>> = _userEvents
+    private val _userEvents = MutableStateFlow<List<Event>>(emptyList())
+    val userEvents: StateFlow<List<Event>> = _userEvents.asStateFlow()
 
-    private val _searchResults = MutableLiveData<List<Event>>()
-    val searchResults: LiveData<List<Event>> = _searchResults
+    private val _searchResults = MutableStateFlow<List<Event>>(emptyList())
+    val searchResults: StateFlow<List<Event>> = _searchResults.asStateFlow()
 
-    private val _operationState = MutableLiveData<OperationState>()
-    val operationState: LiveData<OperationState> = _operationState
+    private val _operationState = MutableStateFlow<OperationState>(OperationState.Idle)
+    val operationState: StateFlow<OperationState> = _operationState.asStateFlow()
 
     fun loadEventsByCities(cityIds: List<String>) {
         viewModelScope.launch {

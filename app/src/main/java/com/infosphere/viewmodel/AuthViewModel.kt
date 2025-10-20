@@ -1,7 +1,5 @@
 package com.infosphere.viewmodel
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.Timestamp
@@ -9,17 +7,20 @@ import com.google.firebase.auth.FirebaseUser
 import com.infosphere.models.User
 import com.infosphere.repository.AuthRepository
 import com.infosphere.repository.UserRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class AuthViewModel : ViewModel() {
     private val authRepository = AuthRepository()
     private val userRepository = UserRepository()
 
-    private val _authState = MutableLiveData<AuthState>()
-    val authState: LiveData<AuthState> = _authState
+    private val _authState = MutableStateFlow<AuthState>(AuthState.Loading)
+    val authState: StateFlow<AuthState> = _authState.asStateFlow()
 
-    private val _currentUser = MutableLiveData<FirebaseUser?>()
-    val currentUser: LiveData<FirebaseUser?> = _currentUser
+    private val _currentUser = MutableStateFlow<FirebaseUser?>(null)
+    val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
 
     init {
         checkAuthState()
@@ -85,6 +86,16 @@ class AuthViewModel : ViewModel() {
                 _authState.value = AuthState.PasswordResetSent
             }.onFailure { exception ->
                 _authState.value = AuthState.Error(exception.message ?: "Unknown error")
+            }
+        }
+    }
+    
+    fun clearError() {
+        if (_authState.value is AuthState.Error) {
+            _authState.value = if (_currentUser.value != null) {
+                AuthState.Authenticated
+            } else {
+                AuthState.Unauthenticated
             }
         }
     }
