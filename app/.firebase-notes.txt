@@ -1,0 +1,6 @@
+# IMPORTANT: Ne jamais commiter le vrai google-services.json
+# Le fichier actuel est un template
+# Remplacez-le par votre propre fichier depuis Firebase Console
+
+# Si vous voulez ignorer le vrai fichier, décommentez :
+# google-services.json

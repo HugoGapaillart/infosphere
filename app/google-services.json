@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "553092877185",
+    "project_id": "infosphere-f7c9c",
+    "storage_bucket": "infosphere-f7c9c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:553092877185:android:6ab8559aa7fe180fec3680",
+        "android_client_info": {
+          "package_name": "com.infosphere"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFHdYb7krkDwx_cLP-keOKJpFl9GhP8x4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

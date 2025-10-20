@@ -1,6 +1,46 @@
 <resources>
-    <string name="app_name">infosphere</string>
-    <string name="title_home">Home</string>
+    <string name="app_name">Infosphere</string>
+    
+    <!-- Navigation -->
+    <string name="title_home">Accueil</string>
+    <string name="home_title">Acceuil</string>
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
+    <string name="search_title">Rechercher</string>
+    <string name="add_event_title">Ajouter</string>
+    <string name="profile_title">Profil</string>
+    
+    <!-- Authentication -->
+    <string name="sign_in">Connexion</string>
+    <string name="sign_up">Inscription</string>
+    <string name="sign_out">Déconnexion</string>
+    <string name="email">Email</string>
+    <string name="password">Mot de passe</string>
+    <string name="display_name">Nom d\'affichage</string>
+    
+    <!-- Home -->
+    <string name="welcome_message">Bienvenue !</string>
+    <string name="welcome_user">Bonjour, %1$s !</string>
+    <string name="no_cities_selected">Sélectionnez vos villes dans votre profil pour voir les événements</string>
+    
+    <!-- Event -->
+    <string name="event_title">Titre</string>
+    <string name="event_description">Description</string>
+    <string name="event_location">Lieu</string>
+    <string name="event_date">Date et heure</string>
+    <string name="event_photo">Photo de l\'événement</string>
+    <string name="event_types">Types d\'événement</string>
+    <string name="select_city">Sélectionner une ville</string>
+    <string name="add_photos">Ajouter des photos</string>
+    <string name="create_event">Créer l\'événement</string>
+    
+    <!-- Search -->
+    <string name="search">Rechercher</string>
+    <string name="no_results">Aucun résultat trouvé</string>
+    
+    <!-- Profile -->
+    <string name="my_cities">Mes villes</string>
+    <string name="my_events">Mes événements</string>
+    <string name="edit_cities">Modifier mes villes</string>
+    <string name="no_events_created">Vous n\'avez pas encore créé d\'événement</string>
 </resources>
