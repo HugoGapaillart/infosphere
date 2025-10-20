@@ -2,6 +2,7 @@
 
 package com.infosphere.ui.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -34,6 +35,16 @@ fun HomeScreen(
     val eventTypes by userProfileViewModel.allEventTypes.collectAsStateWithLifecycle()
 
     var isRefreshing by remember { mutableStateOf(false) }
+
+    LaunchedEffect(user?.selectedCityIds) {
+        user?.selectedCityIds?.let { cityIds ->
+            if (cityIds.isNotEmpty()) {
+                eventViewModel.loadEventsByCities(cityIds)
+            }
+        }
+    }
+
+    Log.d("EventViewModel", "Fetched ${events}")
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Accueil") }) }

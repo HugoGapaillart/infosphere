@@ -31,9 +31,9 @@ class EventViewModel : ViewModel() {
 
     fun loadEventsByCities(cityIds: List<String>) {
         viewModelScope.launch {
-            eventRepository.getUpcomingEventsByCities(cityIds)
+            eventRepository.getEventsByCities(cityIds)
                 .catch { e ->
-                    _operationState.value = OperationState.Error(e.message ?: "Unknown error")
+                    _operationState.value = OperationState.Error(e.message ?: "Erreur inconnue")
                 }
                 .collect { eventList ->
                     _events.value = eventList
@@ -43,7 +43,7 @@ class EventViewModel : ViewModel() {
 
     fun loadUserEvents() {
         val userId = authRepository.getCurrentUser()?.uid ?: return
-        
+
         viewModelScope.launch {
             eventRepository.getEventsByUser(userId)
                 .catch { e ->
@@ -59,7 +59,7 @@ class EventViewModel : ViewModel() {
         viewModelScope.launch {
             _operationState.value = OperationState.Loading
             val result = eventRepository.searchEvents(cityId, eventTypes)
-            
+
             result.onSuccess { eventList ->
                 _searchResults.value = eventList
                 _operationState.value = OperationState.Success
@@ -72,75 +72,61 @@ class EventViewModel : ViewModel() {
     fun createEvent(
         title: String,
         description: String,
-        location: String,
         date: Timestamp,
         cityId: String,
         cityName: String,
-        eventTypes: List<String>,
+        typeIds: List<String>,
         photoUris: List<Uri>
     ) {
         val userId = authRepository.getCurrentUser()?.uid
         if (userId == null) {
-            _operationState.value = OperationState.Error("User not authenticated")
+            _operationState.value = OperationState.Error("Utilisateur non authentifié")
             return
         }
 
         viewModelScope.launch {
             _operationState.value = OperationState.Loading
 
-            // Create event first
             val event = Event(
                 title = title,
                 description = description,
-                location = location,
+                location = "", // Can be added later if needed
                 date = date,
-                photoUrls = emptyList(), // Will be updated after upload
+                photoUrls = emptyList(),
                 cityId = cityId,
                 cityName = cityName,
-                eventTypes = eventTypes,
+                eventTypes = typeIds,
                 createdBy = userId,
                 createdAt = Timestamp.now(),
                 updatedAt = Timestamp.now()
             )
 
             val createResult = eventRepository.createEvent(event)
-            
-            createResult.onSuccess { eventId ->
-                // Upload photos
-                val photoUrls = mutableListOf<String>()
-                for (uri in photoUris) {
-                    val uploadResult = eventRepository.uploadEventPhoto(eventId, uri)
-                    uploadResult.onSuccess { url ->
-                        photoUrls.add(url)
-                    }.onFailure { exception ->
-                        _operationState.value = OperationState.Error(
-                            "Failed to upload photo: ${exception.message}"
-                        )
-                        return@launch
-                    }
-                }
 
-                // Update event with photo URLs
-                if (photoUrls.isNotEmpty()) {
+            createResult.onSuccess { eventId ->
+                if (photoUris.isNotEmpty()) {
+                    val photoUrls = mutableListOf<String>()
+                    for (uri in photoUris) {
+                        val uploadResult = eventRepository.uploadEventPhoto(eventId, uri)
+                        uploadResult.onSuccess { url ->
+                            photoUrls.add(url)
+                        }.onFailure { exception ->
+                            _operationState.value = OperationState.Error(
+                                "Erreur lors de l'upload: ${exception.message}"
+                            )
+                            return@launch
+                        }
+                    }
+
                     eventRepository.updateEvent(eventId, mapOf("photoUrls" to photoUrls))
                 }
 
                 _operationState.value = OperationState.Success
+                loadUserEvents()
             }.onFailure { exception ->
-                _operationState.value = OperationState.Error(exception.message ?: "Unknown error")
-            }
-        }
-    }
-
-    fun deleteEvent(eventId: String) {
-        viewModelScope.launch {
-            _operationState.value = OperationState.Loading
-            val result = eventRepository.deleteEvent(eventId)
-            
-            result.onSuccess {
-                _operationState.value = OperationState.Success
-            }.onFailure { exception ->
-                _operationState.value = OperationState.Error(exception.message ?: "Unknown error")
+                _operationState.value = OperationState.Error(
+                    exception.message ?: "Erreur lors de la création"
+                )
             }
         }
     }

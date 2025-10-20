@@ -32,6 +32,7 @@ class UserProfileViewModel : ViewModel() {
 
     private val _operationState = MutableStateFlow<ProfileOperationState>(ProfileOperationState.Idle)
     val operationState: StateFlow<ProfileOperationState> = _operationState.asStateFlow()
+    val profileOperationState: StateFlow<ProfileOperationState> = _operationState.asStateFlow() // Alias for ProfileScreen
 
     init {
         loadUserProfile()
@@ -84,6 +85,11 @@ class UserProfileViewModel : ViewModel() {
 
             result.onSuccess {
                 _operationState.value = ProfileOperationState.Success
+                // Reload user profile to get updated data
+                loadUserProfile()
+                // Reset state after a short delay
+                kotlinx.coroutines.delay(1000)
+                _operationState.value = ProfileOperationState.Idle
             }.onFailure { exception ->
                 _operationState.value = ProfileOperationState.Error(exception.message ?: "Unknown error")
             }

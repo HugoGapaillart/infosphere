@@ -128,12 +128,25 @@ fun InfosphereApp(
             }
 
             composable(Screen.AddEvent.route) {
-                AddEventScreenPlaceholder()
+                AddEventScreen(
+                    eventViewModel = eventViewModel,
+                    userProfileViewModel = userProfileViewModel,
+                    onEventCreated = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
             }
 
             composable(Screen.Profile.route) {
-                ProfileScreenPlaceholder(
+                ProfileScreen(
                     authViewModel = authViewModel,
+                    userProfileViewModel = userProfileViewModel,
+                    eventViewModel = eventViewModel,
                     onSignOut = {
                         authViewModel.signOut()
                         navController.navigate(Screen.Login.route) {
@@ -141,53 +154,6 @@ fun InfosphereApp(
                         }
                     }
                 )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AddEventScreenPlaceholder() {
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Ajouter un événement") }) }
-    ) { padding ->
-        Text(
-            "Écran d'ajout d'événement - À compléter",
-            modifier = Modifier.padding(padding)
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ProfileScreenPlaceholder(
-    authViewModel: AuthViewModel,
-    onSignOut: () -> Unit
-) {
-    val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
-    
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Profil") }) }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-                .fillMaxWidth()
-        ) {
-            Text(
-                text = "Utilisateur: ${currentUser?.displayName ?: currentUser?.email}",
-                style = MaterialTheme.typography.titleLarge
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Button(
-                onClick = onSignOut,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Déconnexion")
             }
         }
     }

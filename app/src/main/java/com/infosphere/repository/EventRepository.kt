@@ -110,6 +110,27 @@ class EventRepository {
         awaitClose { listener.remove() }
     }
 
+    fun getEventsByCities(cityIds: List<String>): Flow<List<Event>> {
+        return callbackFlow {
+            val query = eventsCollection
+                .whereIn("cityId", cityIds)
+
+            val listener = query.addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val events = snapshot?.documents?.mapNotNull { it.toObject(Event::class.java)?.copy(id = it.id) }
+                    ?: emptyList()
+                trySend(events)
+            }
+
+            awaitClose { listener.remove() }
+        }
+    }
+
+
     suspend fun searchEvents(
         cityId: String? = null,
         eventTypes: List<String>? = null
