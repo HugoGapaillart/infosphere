@@ -47,6 +47,7 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
     // Jetpack Compose
     implementation(platform(libs.androidx.compose.bom))
