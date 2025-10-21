@@ -19,6 +19,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.infosphere.ui.screens.*
 import com.infosphere.viewmodel.AuthState
@@ -116,24 +117,42 @@ fun InfosphereApp(
                     authViewModel = authViewModel,
                     eventViewModel = eventViewModel,
                     userProfileViewModel = userProfileViewModel,
-                    onEventClick = {}
+                    onEventClick = { event ->
+                        navController.navigate(Screen.EventDetail.createRoute(event.id))
+                    }
                 )
             }
 
             composable(Screen.Search.route) {
                 SearchScreen(
                     eventViewModel = eventViewModel,
-                    userProfileViewModel = userProfileViewModel
+                    userProfileViewModel = userProfileViewModel,
+                    onEventClick = { eventId ->
+                        navController.navigate(Screen.EventDetail.createRoute(eventId))
+                    }
                 )
             }
 
             composable(Screen.AddEvent.route) {
-                AddEventScreenPlaceholder()
+                AddEventScreen(
+                    eventViewModel = eventViewModel,
+                    userProfileViewModel = userProfileViewModel,
+                    onEventCreated = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                    },
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
             }
 
             composable(Screen.Profile.route) {
-                ProfileScreenPlaceholder(
+                ProfileScreen(
                     authViewModel = authViewModel,
+                    userProfileViewModel = userProfileViewModel,
+                    eventViewModel = eventViewModel,
                     onSignOut = {
                         authViewModel.signOut()
                         navController.navigate(Screen.Login.route) {
@@ -142,52 +161,18 @@ fun InfosphereApp(
                     }
                 )
             }
-        }
-    }
-}
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun AddEventScreenPlaceholder() {
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Ajouter un événement") }) }
-    ) { padding ->
-        Text(
-            "Écran d'ajout d'événement - À compléter",
-            modifier = Modifier.padding(padding)
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ProfileScreenPlaceholder(
-    authViewModel: AuthViewModel,
-    onSignOut: () -> Unit
-) {
-    val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
-    
-    Scaffold(
-        topBar = { TopAppBar(title = { Text("Profil") }) }
-    ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
-                .fillMaxWidth()
-        ) {
-            Text(
-                text = "Utilisateur: ${currentUser?.displayName ?: currentUser?.email}",
-                style = MaterialTheme.typography.titleLarge
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Button(
-                onClick = onSignOut,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Déconnexion")
+            composable(
+                route = "event_detail/{eventId}"
+            ) { backStackEntry ->
+                val eventId = backStackEntry.arguments?.getString("eventId") ?: ""
+                EventDetailScreen(
+                    eventId = eventId,
+                    eventViewModel = eventViewModel,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
             }
         }
     }

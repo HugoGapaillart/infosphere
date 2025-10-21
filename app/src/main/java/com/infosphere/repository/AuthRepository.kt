@@ -10,8 +10,6 @@ class AuthRepository {
 
     fun getCurrentUser(): FirebaseUser? = auth.currentUser
 
-    fun isUserLoggedIn(): Boolean = auth.currentUser != null
-
     suspend fun signIn(email: String, password: String): Result<FirebaseUser> {
         return try {
             val result = auth.signInWithEmailAndPassword(email, password).await()
@@ -25,13 +23,13 @@ class AuthRepository {
         return try {
             val result = auth.createUserWithEmailAndPassword(email, password).await()
             val user = result.user!!
-            
+
             // Update display name
             val profileUpdates = UserProfileChangeRequest.Builder()
                 .setDisplayName(displayName)
                 .build()
             user.updateProfile(profileUpdates).await()
-            
+
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)

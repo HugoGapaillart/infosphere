@@ -22,6 +22,9 @@ class AuthViewModel : ViewModel() {
     private val _currentUser = MutableStateFlow<FirebaseUser?>(null)
     val currentUser: StateFlow<FirebaseUser?> = _currentUser.asStateFlow()
 
+    private val _userProfile = MutableStateFlow<User?>(null)
+    val userProfile: StateFlow<User?> = _userProfile.asStateFlow()
+
     init {
         checkAuthState()
     }
@@ -29,7 +32,23 @@ class AuthViewModel : ViewModel() {
     private fun checkAuthState() {
         val user = authRepository.getCurrentUser()
         _currentUser.value = user
-        _authState.value = if (user != null) AuthState.Authenticated else AuthState.Unauthenticated
+        _authState.value = if (user != null) {
+            loadUserProfile()
+            AuthState.Authenticated
+        } else {
+            AuthState.Unauthenticated
+        }
+    }
+
+    private fun loadUserProfile() {
+        val userId = authRepository.getCurrentUser()?.uid ?: return
+
+        viewModelScope.launch {
+            userRepository.getUserFlow(userId)
+                .collect { userData ->
+                    _userProfile.value = userData
+                }
+        }
     }
 
     fun signIn(email: String, password: String) {
@@ -39,6 +58,7 @@ class AuthViewModel : ViewModel() {
             
             result.onSuccess { user ->
                 _currentUser.value = user
+                loadUserProfile()
                 _authState.value = AuthState.Authenticated
             }.onFailure { exception ->
                 _authState.value = AuthState.Error(exception.message ?: "Unknown error")
@@ -52,7 +72,6 @@ class AuthViewModel : ViewModel() {
             val result = authRepository.signUp(email, password, displayName)
             
             result.onSuccess { firebaseUser ->
-                // Create user document in Firestore
                 val user = User(
                     id = firebaseUser.uid,
                     email = email,
@@ -64,6 +83,7 @@ class AuthViewModel : ViewModel() {
                 
                 userRepository.createUser(user)
                 _currentUser.value = firebaseUser
+                loadUserProfile()
                 _authState.value = AuthState.Authenticated
             }.onFailure { exception ->
                 _authState.value = AuthState.Error(exception.message ?: "Unknown error")
@@ -74,7 +94,21 @@ class AuthViewModel : ViewModel() {
     fun signOut() {
         authRepository.signOut()
         _currentUser.value = null
+        _userProfile.value = null
         _authState.value = AuthState.Unauthenticated
+    }
+
+    fun updateUserCities(cityIds: List<String>) {
+        val userId = authRepository.getCurrentUser()?.uid ?: return
+
+        viewModelScope.launch {
+            val result = userRepository.updateUserCities(userId, cityIds)
+            result.onSuccess {
+                // Profile will be updated automatically via Flow
+            }.onFailure { exception ->
+                _authState.value = AuthState.Error(exception.message ?: "Unknown error")
+            }
+        }
     }
 
     fun resetPassword(email: String) {
@@ -99,4 +133,12 @@ class AuthViewModel : ViewModel() {
             }
         }
     }
+}
+
+sealed class AuthState {
+    object Authenticated : AuthState()
+    object Unauthenticated : AuthState()
+    object Loading : AuthState()
+    object PasswordResetSent : AuthState()
+    data class Error(val message: String) : AuthState()
 }

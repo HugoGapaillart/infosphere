@@ -6,6 +6,7 @@ import android.Manifest
 import android.location.Geocoder
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -26,6 +27,7 @@ import com.infosphere.viewmodel.AuthViewModel
 import com.infosphere.viewmodel.EventViewModel
 import com.infosphere.viewmodel.UserProfileViewModel
 import java.util.Locale
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 
 @Composable
 fun HomeScreen(
@@ -36,9 +38,9 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
-    val user by userProfileViewModel.user.collectAsStateWithLifecycle()
+    val user by authViewModel.userProfile.collectAsStateWithLifecycle()
     val events by eventViewModel.events.collectAsStateWithLifecycle()
-    val eventTypes by userProfileViewModel.allEventTypes.collectAsStateWithLifecycle()
+    val eventTypes by eventViewModel.allEventTypes.collectAsStateWithLifecycle()
 
     var isRefreshing by remember { mutableStateOf(false) }
 
@@ -74,6 +76,16 @@ fun HomeScreen(
         }
     }
 
+    LaunchedEffect(user?.selectedCityIds) {
+        user?.selectedCityIds?.let { cityIds ->
+            if (cityIds.isNotEmpty()) {
+                eventViewModel.loadEventsByCities(cityIds)
+            }
+        }
+    }
+
+    Log.d("EventViewModel", "Fetched ${events}")
+
     Scaffold(
         topBar = { TopAppBar(title = { Text("Accueil") }) }
     ) { paddingValues ->
@@ -82,7 +94,11 @@ fun HomeScreen(
             isRefreshing = isRefreshing,
             onRefresh = {
                 isRefreshing = true
-                userProfileViewModel.loadUserProfile()
+                user?.selectedCityIds?.let { cityIds ->
+                    if (cityIds.isNotEmpty()) {
+                        eventViewModel.loadEventsByCities(cityIds)
+                    }
+                }
                 isRefreshing = false
             }
         ) {
@@ -131,7 +147,7 @@ fun HomeScreen(
                                 EventCard(
                                     event = event,
                                     eventTypes = eventTypes,
-                                    onClick = onEventClick
+                                    onClick = onEventClick,
                                 )
                             }
                         }
