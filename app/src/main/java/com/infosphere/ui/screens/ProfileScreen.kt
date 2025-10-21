@@ -17,7 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.infosphere.ui.components.EmptyState
-import com.infosphere.ui.components.EventCard
+import com.infosphere.ui.components.CompactEventCard
 import com.infosphere.viewmodel.AuthViewModel
 import com.infosphere.viewmodel.EventViewModel
 import com.infosphere.viewmodel.ProfileOperationState
@@ -35,11 +35,12 @@ fun ProfileScreen(
     modifier: Modifier = Modifier
 ) {
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
-    val user by userProfileViewModel.user.collectAsStateWithLifecycle()
+    val user by authViewModel.userProfile.collectAsStateWithLifecycle()
     val allCities by userProfileViewModel.allCities.collectAsStateWithLifecycle()
     val userEvents by eventViewModel.userEvents.collectAsStateWithLifecycle()
-    val profileOperationState by userProfileViewModel.profileOperationState.collectAsStateWithLifecycle()
-    
+    val userEventTypes by eventViewModel.userEventTypes.collectAsStateWithLifecycle()
+    val profileOperationState by userProfileViewModel.operationState.collectAsStateWithLifecycle()
+
     var showCityDialog by remember { mutableStateOf(false) }
     val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy", Locale.FRENCH) }
     
@@ -274,19 +275,98 @@ fun ProfileScreen(
                     Card(
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        // EmptyState(
-                        //     message = "Vous n'avez pas encore créé d'événement",
-                        //     icon = Icons.AutoMirrored.Filled.EventNote,
-                        //     modifier = Modifier.padding(32.dp)
-                        // )
+                        EmptyState(
+                            message = "Vous n'avez pas encore créé d'événement",
+                            modifier = Modifier.padding(32.dp)
+                        )
                     }
                 } else {
-                    userEvents.forEach { event ->
-                        EventCard(
-                            event = event,
-                            eventTypes = emptyList(),
-                            onClick = { /* Navigate to edit */ }
-                        )
+                    // Séparer les événements à venir et passés
+                    val upcomingEvents = userEvents.filter { !it.isPast() }
+                    val pastEvents = userEvents.filter { it.isPast() }
+
+                    // Événements à venir
+                    if (upcomingEvents.isNotEmpty()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.EventAvailable,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                "À venir",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                            Surface(
+                                shape = MaterialTheme.shapes.small,
+                                color = MaterialTheme.colorScheme.secondaryContainer
+                            ) {
+                                Text(
+                                    "${upcomingEvents.size}",
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        upcomingEvents.forEach { event ->
+                            CompactEventCard(
+                                event = event,
+                                eventTypes = userEventTypes,
+                                onClick = { /* Navigate to edit */ }
+                            )
+                        }
+                    }
+
+                    // Événements passés
+                    if (pastEvents.isNotEmpty()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(top = 16.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.History,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Text(
+                                "Passés",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Surface(
+                                shape = MaterialTheme.shapes.small,
+                                color = MaterialTheme.colorScheme.surfaceVariant
+                            ) {
+                                Text(
+                                    "${pastEvents.size}",
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+
+                        pastEvents.forEach { event ->
+                            CompactEventCard(
+                                event = event,
+                                eventTypes = userEventTypes,
+                                onClick = { /* Navigate to edit */ }
+                            )
+                        }
                     }
                 }
             }
@@ -321,7 +401,7 @@ fun ProfileScreen(
             selectedCityIds = user?.selectedCityIds ?: emptyList(),
             onDismiss = { showCityDialog = false },
             onConfirm = { selectedIds ->
-                userProfileViewModel.updateUserCities(selectedIds)
+                authViewModel.updateUserCities(selectedIds)
                 showCityDialog = false
             }
         )

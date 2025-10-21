@@ -1,6 +1,7 @@
 package com.infosphere.repository
 
 import android.net.Uri
+import android.util.Log
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -23,6 +24,7 @@ class EventRepository {
             val docRef = eventsCollection.add(event).await()
             Result.success(docRef.id)
         } catch (e: Exception) {
+            Log.e("EventRepository", "Erreur lors de la création d'un événement", e)
             Result.failure(e)
         }
     }
@@ -37,6 +39,7 @@ class EventRepository {
             
             Result.success(downloadUrl.toString())
         } catch (e: Exception) {
+            Log.e("EventRepository", "Erreur lors de l'upload de la photo d'événement", e)
             Result.failure(e)
         }
     }
@@ -49,6 +52,7 @@ class EventRepository {
             eventsCollection.document(eventId).update(updatesWithTimestamp).await()
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e("EventRepository", "Erreur lors de la mise à jour d'un événement", e)
             Result.failure(e)
         }
     }
@@ -58,6 +62,7 @@ class EventRepository {
             eventsCollection.document(eventId).delete().await()
             Result.success(Unit)
         } catch (e: Exception) {
+            Log.e("EventRepository", "Erreur lors de la suppression d'un événement", e)
             Result.failure(e)
         }
     }
@@ -68,6 +73,7 @@ class EventRepository {
             val event = document.toObject(Event::class.java)
             Result.success(event)
         } catch (e: Exception) {
+            Log.e("EventRepository", "Erreur lors de la récupération d'un événement", e)
             Result.failure(e)
         }
     }
@@ -86,6 +92,7 @@ class EventRepository {
             .orderBy("date", Query.Direction.ASCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
+                    Log.e("EventRepository", "Erreur lors de la récupération des événements à venir", error)
                     close(error)
                     return@addSnapshotListener
                 }
@@ -101,6 +108,7 @@ class EventRepository {
             .orderBy("date", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
+                    Log.e("EventRepository", "Erreur lors de la récupération des événements par utilisateur", error)
                     close(error)
                     return@addSnapshotListener
                 }
@@ -117,6 +125,7 @@ class EventRepository {
 
             val listener = query.addSnapshotListener { snapshot, error ->
                 if (error != null) {
+                    Log.e("EventRepository", "Erreur lors de la récupération des événements par villes", error)
                     close(error)
                     return@addSnapshotListener
                 }
@@ -130,19 +139,21 @@ class EventRepository {
         }
     }
 
-
     suspend fun searchEvents(
         cityId: String? = null,
         eventTypes: List<String>? = null
     ): Result<List<Event>> {
         return try {
             var query: Query = eventsCollection
-                .whereGreaterThanOrEqualTo("date", Timestamp.now())
-                .orderBy("date", Query.Direction.ASCENDING)
 
+            // Apply filters BEFORE orderBy
             if (cityId != null) {
                 query = query.whereEqualTo("cityId", cityId)
             }
+
+            query = query
+                .whereGreaterThanOrEqualTo("date", Timestamp.now())
+                .orderBy("date", Query.Direction.ASCENDING)
 
             val snapshot = query.get().await()
             var events = snapshot.toObjects(Event::class.java)
@@ -156,6 +167,7 @@ class EventRepository {
 
             Result.success(events)
         } catch (e: Exception) {
+            Log.e("EventRepository", "Erreur lors de la recherche d'événements (index Firestore ?)", e)
             Result.failure(e)
         }
     }

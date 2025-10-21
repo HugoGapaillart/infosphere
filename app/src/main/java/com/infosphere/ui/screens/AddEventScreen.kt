@@ -39,8 +39,8 @@ fun AddEventScreen(
 ) {
     val operationState by eventViewModel.operationState.collectAsStateWithLifecycle()
     val cities by userProfileViewModel.allCities.collectAsStateWithLifecycle()
-    val eventTypes by userProfileViewModel.allEventTypes.collectAsStateWithLifecycle()
-    
+    val eventTypes by eventViewModel.allEventTypes.collectAsStateWithLifecycle()
+
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedPhotos by remember { mutableStateOf<List<Uri>>(emptyList()) }
@@ -57,7 +57,8 @@ fun AddEventScreen(
     var cityError by remember { mutableStateOf<String?>(null) }
     var dateError by remember { mutableStateOf<String?>(null) }
     var typeError by remember { mutableStateOf<String?>(null) }
-    
+    var isCreating by remember { mutableStateOf(false) }
+
     val dateFormatter = remember { SimpleDateFormat("dd MMMM yyyy à HH:mm", Locale.FRENCH) }
     
     // Photo picker launcher
@@ -67,13 +68,15 @@ fun AddEventScreen(
         selectedPhotos = uris
     }
     
-    // Handle operation state
+    // Reset operation state on screen entry
+    LaunchedEffect(Unit) {
+        eventViewModel.resetOperationState()
+    }
+
+    // Handle operation state - only redirect if we actually created an event
     LaunchedEffect(operationState) {
-        when (operationState) {
-            is OperationState.Success -> {
-                onEventCreated()
-            }
-            else -> {}
+        if (isCreating && operationState is OperationState.Success) {
+            onEventCreated()
         }
     }
     
@@ -304,7 +307,7 @@ fun AddEventScreen(
                         supportingText = cityError?.let { { Text(it) } },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(),
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true),
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                     )
                     
@@ -438,6 +441,7 @@ fun AddEventScreen(
                         }
                         
                         if (!hasError) {
+                            isCreating = true
                             val selectedCity = cities.find { it.id == selectedCityId }
                             eventViewModel.createEvent(
                                 title = title,

@@ -22,7 +22,7 @@ import java.util.Locale
 @Composable
 fun CompactEventCard(
     event: Event,
-    eventTypes: List<EventType>,
+    eventTypes: Map<String, EventType> = emptyMap(),
     onClick: (Event) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -78,7 +78,8 @@ fun CompactEventCard(
                         style = MaterialTheme.typography.titleLarge,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -88,7 +89,8 @@ fun CompactEventCard(
                         text = dateFormat.format(event.date.toDate()),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
 
                     Spacer(modifier = Modifier.height(4.dp))
@@ -97,20 +99,26 @@ fun CompactEventCard(
                         text = "${event.location} • ${event.cityName}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
 
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.Center
+                        horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally)
                     ) {
                         event.eventTypes.take(3).forEach { typeId ->
-                            val typeName = eventTypes.find { it.id == typeId }?.name ?: typeId
+                            val typeName = eventTypes[typeId]?.name ?: typeId
                             AssistChip(
                                 onClick = { },
-                                label = { Text(typeName) }
+                                label = {
+                                    Text(
+                                        text = typeName,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
                             )
                         }
                     }

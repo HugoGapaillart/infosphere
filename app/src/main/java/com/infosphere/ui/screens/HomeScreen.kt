@@ -19,7 +19,6 @@ import com.infosphere.viewmodel.AuthViewModel
 import com.infosphere.viewmodel.EventViewModel
 import com.infosphere.viewmodel.UserProfileViewModel
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 
 @Composable
 fun HomeScreen(
@@ -30,9 +29,9 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
-    val user by userProfileViewModel.user.collectAsStateWithLifecycle()
+    val user by authViewModel.userProfile.collectAsStateWithLifecycle()
     val events by eventViewModel.events.collectAsStateWithLifecycle()
-    val eventTypes by userProfileViewModel.allEventTypes.collectAsStateWithLifecycle()
+    val eventTypes by eventViewModel.allEventTypes.collectAsStateWithLifecycle()
 
     var isRefreshing by remember { mutableStateOf(false) }
 
@@ -54,7 +53,11 @@ fun HomeScreen(
             isRefreshing = isRefreshing,
             onRefresh = {
                 isRefreshing = true
-                userProfileViewModel.loadUserProfile()
+                user?.selectedCityIds?.let { cityIds ->
+                    if (cityIds.isNotEmpty()) {
+                        eventViewModel.loadEventsByCities(cityIds)
+                    }
+                }
                 isRefreshing = false
             }
         ) {

@@ -27,41 +27,30 @@ import com.infosphere.ui.components.CompactEventCard
 fun SearchScreen(
     eventViewModel: EventViewModel,
     userProfileViewModel: UserProfileViewModel,
+    onEventClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val searchResults by eventViewModel.searchResults.collectAsStateWithLifecycle()
     val operationState by eventViewModel.operationState.collectAsStateWithLifecycle()
+    val eventTypes by eventViewModel.allEventTypes.collectAsStateWithLifecycle()
     val cities by userProfileViewModel.allCities.collectAsStateWithLifecycle()
-    val eventTypes by userProfileViewModel.allEventTypes.collectAsStateWithLifecycle()
     
+    // Convert eventTypes list to map for CompactEventCard
+    val eventTypesMap = remember(eventTypes) {
+        eventTypes.associateBy { it.id }
+    }
+
     var selectedCityId by remember { mutableStateOf<String?>(null) }
     var selectedTypeIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var expandedCity by remember { mutableStateOf(false) }
     var hasSearched by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        "Rechercher",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold
-                    ) 
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.primary
-                )
-            )
-        }
-    ) { paddingValues ->
+    Scaffold() { paddingValues ->
         Column(
             modifier = modifier
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Search Filters Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -95,10 +84,12 @@ fun SearchScreen(
                             readOnly = true,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .menuAnchor(),
+                                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true),
                             placeholder = { Text("Sélectionner une ville") },
                             trailingIcon = { 
-                                Row {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
                                     if (selectedCityId != null) {
                                         IconButton(onClick = { selectedCityId = null }) {
                                             Icon(Icons.Default.Clear, "Effacer")
@@ -252,13 +243,12 @@ fun SearchScreen(
                         // Results List with compact horizontal cards
                         LazyColumn(
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(searchResults, key = { it.id }) { event ->
                                 CompactEventCard(
                                     event = event,
-                                    eventTypes = eventTypes,
-                                    onClick = { /* TODO: Navigate to detail */ }
+                                    onClick = { onEventClick(event.id) }
                                 )
                             }
                         }

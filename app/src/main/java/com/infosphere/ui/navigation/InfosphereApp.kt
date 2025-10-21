@@ -19,6 +19,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.infosphere.ui.screens.*
 import com.infosphere.viewmodel.AuthState
@@ -116,14 +117,19 @@ fun InfosphereApp(
                     authViewModel = authViewModel,
                     eventViewModel = eventViewModel,
                     userProfileViewModel = userProfileViewModel,
-                    onEventClick = {}
+                    onEventClick = { event ->
+                        navController.navigate(Screen.EventDetail.createRoute(event.id))
+                    }
                 )
             }
 
             composable(Screen.Search.route) {
                 SearchScreen(
                     eventViewModel = eventViewModel,
-                    userProfileViewModel = userProfileViewModel
+                    userProfileViewModel = userProfileViewModel,
+                    onEventClick = { eventId ->
+                        navController.navigate(Screen.EventDetail.createRoute(eventId))
+                    }
                 )
             }
 
@@ -152,6 +158,19 @@ fun InfosphereApp(
                         navController.navigate(Screen.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }
+                    }
+                )
+            }
+
+            composable(
+                route = "event_detail/{eventId}"
+            ) { backStackEntry ->
+                val eventId = backStackEntry.arguments?.getString("eventId") ?: ""
+                EventDetailScreen(
+                    eventId = eventId,
+                    eventViewModel = eventViewModel,
+                    onNavigateBack = {
+                        navController.popBackStack()
                     }
                 )
             }
