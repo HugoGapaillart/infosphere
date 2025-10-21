@@ -1,6 +1,5 @@
 package com.infosphere.ui.screens
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -13,22 +12,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil.compose.AsyncImage
-import com.infosphere.models.Event
-import com.infosphere.models.EventType
 import com.infosphere.ui.components.EmptyState
 import com.infosphere.ui.components.LoadingIndicator
 import com.infosphere.viewmodel.EventViewModel
 import com.infosphere.viewmodel.OperationState
 import com.infosphere.viewmodel.UserProfileViewModel
-import java.text.SimpleDateFormat
-import java.util.Locale
+import com.infosphere.ui.components.CompactEventCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -299,138 +291,6 @@ fun SearchScreen(
                             "Sélectionnez une ville et des types d'événement",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun CompactEventCard(
-    event: Event,
-    eventTypes: List<EventType>,
-    onClick: (Event) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(120.dp)
-            .clickable { onClick(event) },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // Square Image on the left
-            if (event.photoUrls.isNotEmpty()) {
-                AsyncImage(
-                    model = event.photoUrls.first(),
-                    contentDescription = "Photo de l'événement",
-                    modifier = Modifier
-                        .width(120.dp)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                // Placeholder if no image
-                Box(
-                    modifier = Modifier
-                        .width(120.dp)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(topStart = 12.dp, bottomStart = 12.dp))
-                        .let { 
-                            Surface(
-                                modifier = it,
-                                color = MaterialTheme.colorScheme.surfaceVariant
-                            ) {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        Icons.Default.Search,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
-                                        modifier = Modifier.size(40.dp)
-                                    )
-                                }
-                            }
-                            it
-                        }
-                )
-            }
-
-            // Event Details on the right
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    // Title
-                    Text(
-                        text = event.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Date
-                    val dateFormat = SimpleDateFormat("dd MMM yyyy • HH:mm", Locale.FRENCH)
-                    Text(
-                        text = dateFormat.format(event.date.toDate()),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-
-                // Location and Type
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Location
-                    Text(
-                        text = event.cityName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
-
-                    // First Event Type Chip
-                    if (event.eventTypes.isNotEmpty()) {
-                        val typeName = eventTypes.find { it.id == event.eventTypes.first() }?.name 
-                            ?: event.eventTypes.first()
-                        AssistChip(
-                            onClick = { },
-                            label = { 
-                                Text(
-                                    typeName,
-                                    style = MaterialTheme.typography.labelSmall
-                                ) 
-                            },
-                            modifier = Modifier.height(24.dp),
-                            colors = AssistChipDefaults.assistChipColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                labelColor = MaterialTheme.colorScheme.onSecondaryContainer
-                            )
                         )
                     }
                 }

@@ -100,7 +100,7 @@ fun HomeScreen(
                                 EventCard(
                                     event = event,
                                     eventTypes = eventTypes,
-                                    onClick = onEventClick
+                                    onClick = onEventClick,
                                 )
                             }
                         }
