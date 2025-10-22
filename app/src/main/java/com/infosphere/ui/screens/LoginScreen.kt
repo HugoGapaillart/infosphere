@@ -37,7 +37,6 @@ fun LoginScreen(
     var passwordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Navigate when authenticated
     LaunchedEffect(authState) {
         if (authState is AuthState.Authenticated) {
             onNavigateToHome()
@@ -50,9 +49,9 @@ fun LoginScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(start = 24.dp, end = 24.dp, top = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
         // App Title
         Text(
@@ -63,8 +62,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
-        // Tabs
-        TabRow(selectedTabIndex = if (isSignUpMode) 1 else 0) {
+        PrimaryTabRow(selectedTabIndex = if (isSignUpMode) 1 else 0) {
             Tab(
                 selected = !isSignUpMode,
                 onClick = { 
@@ -93,7 +91,6 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Display Name (only for sign up)
         if (isSignUpMode) {
             OutlinedTextField(
                 value = displayName,
@@ -111,7 +108,6 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // Email
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -129,7 +125,6 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Password
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -174,7 +169,6 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Submit Button
         Button(
             onClick = {
                 errorMessage = null
@@ -211,7 +205,6 @@ fun LoginScreen(
             }
         }
 
-        // Error Message
         if (errorMessage != null) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(

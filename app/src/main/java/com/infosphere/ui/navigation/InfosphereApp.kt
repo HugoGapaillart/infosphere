@@ -10,17 +10,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.infosphere.enums.GameMode
 import com.infosphere.ui.screens.*
 import com.infosphere.viewmodel.AuthState
 import com.infosphere.viewmodel.AuthViewModel
@@ -65,7 +63,7 @@ fun InfosphereApp(
         BottomNavItem(Screen.Home.route, Icons.Filled.Home, "Accueil"),
         BottomNavItem(Screen.Search.route, Icons.Filled.Search, "Rechercher"),
         BottomNavItem(Screen.AddEvent.route, Icons.Filled.Add, "Ajouter"),
-        BottomNavItem(Screen.Profile.route, Icons.Filled.Person, "Profil")
+        BottomNavItem(Screen.Profile.route, Icons.Filled.Person, "Profil"),
     )
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -150,6 +148,7 @@ fun InfosphereApp(
 
             composable(Screen.Profile.route) {
                 ProfileScreen(
+                    navController,
                     authViewModel = authViewModel,
                     userProfileViewModel = userProfileViewModel,
                     eventViewModel = eventViewModel,
@@ -162,18 +161,29 @@ fun InfosphereApp(
                 )
             }
 
-            composable(
-                route = "event_detail/{eventId}"
-            ) { backStackEntry ->
-                val eventId = backStackEntry.arguments?.getString("eventId") ?: ""
-                EventDetailScreen(
-                    eventId = eventId,
-                    eventViewModel = eventViewModel,
-                    onNavigateBack = {
-                        navController.popBackStack()
-                    }
-                )
+            composable(Screen.EventDetail.route) {
+                backStackEntry ->
+                    val eventId = backStackEntry.arguments?.getString("eventId") ?: ""
+                    EventDetailScreen(
+                        eventId = eventId,
+                        eventViewModel = eventViewModel,
+                        onNavigateBack = {
+                            navController.popBackStack()
+                        }
+                    )
             }
+
+            composable(Screen.GameMenu.route) {
+                navBackStackEntry -> GameMenuScreen(navController)
+            }
+
+            composable(Screen.GameScreen.route) {
+                navBackStackEntry ->
+                    val modeName = navBackStackEntry.arguments?.getString("modeName")
+                    val gameMode = runCatching { GameMode.valueOf(modeName ?: GameMode.NORMAL.name) }.getOrDefault(GameMode.NORMAL)
+                    GameScreen(gameMode = gameMode, navController = navController)
+            }
+
         }
     }
 }

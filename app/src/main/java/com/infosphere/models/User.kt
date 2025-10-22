@@ -8,7 +8,7 @@ data class User(
     val id: String = "",
     val email: String = "",
     val displayName: String = "",
-    val selectedCityIds: List<String> = emptyList(), // Cities the user is interested in
+    val selectedCityIds: List<String> = emptyList(),
     val createdAt: Timestamp = Timestamp.now(),
     val updatedAt: Timestamp = Timestamp.now()
 ) {

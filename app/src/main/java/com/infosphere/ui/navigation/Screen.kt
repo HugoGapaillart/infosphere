@@ -9,4 +9,8 @@ sealed class Screen(val route: String) {
     object EventDetail : Screen("event_detail/{eventId}") {
         fun createRoute(eventId: String) = "event_detail/$eventId"
     }
+    object GameMenu: Screen("game_menu")
+    object GameScreen: Screen("game_screen/{modeName}") {
+        fun createRoute(modeName: String) = "game_screen/$modeName"
+    }
 }

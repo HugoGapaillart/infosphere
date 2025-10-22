@@ -163,7 +163,6 @@ fun HomeScreen(
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
 
-                // Message de bienvenue
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -179,7 +178,6 @@ fun HomeScreen(
                     )
                 }
 
-                // Vérification des villes sélectionnées
                 if (user?.selectedCityIds.isNullOrEmpty()) {
                     EmptyState(
                         message = "Sélectionnez vos villes dans votre profil pour voir les événements",
