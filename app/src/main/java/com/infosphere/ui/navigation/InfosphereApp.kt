@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -20,6 +21,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.infosphere.enums.GameMode
 import com.infosphere.ui.screens.*
+import com.infosphere.models.Event
 import com.infosphere.viewmodel.AuthState
 import com.infosphere.viewmodel.AuthViewModel
 import com.infosphere.viewmodel.EventViewModel
@@ -157,6 +159,9 @@ fun InfosphereApp(
                         navController.navigate(Screen.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }
+                    },
+                    onEventClick = { eventId ->
+                        navController.navigate(Screen.EventDetail.createRoute(eventId))
                     }
                 )
             }
@@ -169,8 +174,50 @@ fun InfosphereApp(
                         eventViewModel = eventViewModel,
                         onNavigateBack = {
                             navController.popBackStack()
+                        },
+                        onEditEvent = { event, id ->
+                            navController.navigate(Screen.EditEvent.createRoute(id))
                         }
                     )
+            }
+
+            composable(Screen.EditEvent.route) {
+                backStackEntry ->
+                    val eventId = backStackEntry.arguments?.getString("eventId") ?: ""
+                    var event by remember { mutableStateOf<Event?>(null) }
+                    var isLoading by remember { mutableStateOf(true) }
+
+                    LaunchedEffect(eventId) {
+                        val result = eventViewModel.getEvent(eventId)
+                        result.onSuccess { eventData ->
+                            event = eventData
+                            isLoading = false
+                        }.onFailure {
+                            navController.popBackStack()
+                        }
+                    }
+
+                    if (isLoading) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    } else if (event != null) {
+                        EditEventScreen(
+                            event = event!!,
+                            eventId = eventId,
+                            eventViewModel = eventViewModel,
+                            userProfileViewModel = userProfileViewModel,
+                            onEventUpdated = {
+                                navController.popBackStack()
+                            },
+                            onNavigateBack = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
             }
 
             composable(Screen.GameMenu.route) {

@@ -4,75 +4,15 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.AddPhotoAlternate
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.LocationCity
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Photo
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Title
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -83,21 +23,22 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.google.firebase.Timestamp
+import com.infosphere.models.Event
 import com.infosphere.viewmodel.EventViewModel
 import com.infosphere.viewmodel.OperationState
 import com.infosphere.viewmodel.UnsplashViewModel
 import com.infosphere.viewmodel.UserProfileViewModel
 import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddEventScreen(
+fun EditEventScreen(
+    event: Event,
+    eventId: String,
     eventViewModel: EventViewModel,
     userProfileViewModel: UserProfileViewModel,
-    onEventCreated: () -> Unit,
+    onEventUpdated: () -> Unit,
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -105,34 +46,36 @@ fun AddEventScreen(
     val cities by userProfileViewModel.allCities.collectAsStateWithLifecycle()
     val eventTypes by eventViewModel.allEventTypes.collectAsStateWithLifecycle()
 
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
-    var selectedPhotos by remember { mutableStateOf<List<Uri>>(emptyList()) }
-    var selectedDate by remember { mutableStateOf<Long?>(null) }
-    var selectedCityId by remember { mutableStateOf<String?>(null) }
-    var selectedTypeIds by remember { mutableStateOf<Set<String>>(emptySet()) }
-    
+    var title by remember { mutableStateOf(event.title) }
+    var description by remember { mutableStateOf(event.description) }
+    var existingPhotoUrls by remember { mutableStateOf(event.photoUrls) }
+    var newPhotos by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var selectedDate by remember { mutableStateOf(event.date.toDate().time) }
+    var selectedCityId by remember { mutableStateOf<String?>(event.cityId) }
+    var selectedTypeIds by remember { mutableStateOf(event.eventTypes.toSet()) }
+
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var showCityDropdown by remember { mutableStateOf(false) }
-    
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
     var titleError by remember { mutableStateOf<String?>(null) }
     var descriptionError by remember { mutableStateOf<String?>(null) }
     var cityError by remember { mutableStateOf<String?>(null) }
     var dateError by remember { mutableStateOf<String?>(null) }
     var typeError by remember { mutableStateOf<String?>(null) }
-    var isCreating by remember { mutableStateOf(false) }
+    var isUpdating by remember { mutableStateOf(false) }
 
     val dateFormatter = remember { SimpleDateFormat("dd MMMM yyyy à HH:mm", Locale.FRENCH) }
-    
+
     // Photo picker launcher
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 5)
     ) { uris ->
-        selectedPhotos = uris
+        newPhotos = uris
     }
 
-    // Unsplash preview when no local photos are selected
+    // Unsplash preview when no photos are selected
     val unsplashVm: UnsplashViewModel = viewModel()
     val unsplashPhoto by unsplashVm.photo.collectAsStateWithLifecycle()
     val unsplashLoading by unsplashVm.isLoading.collectAsStateWithLifecycle()
@@ -142,20 +85,31 @@ fun AddEventScreen(
         eventViewModel.resetOperationState()
     }
 
-    // Handle operation state - only redirect if we actually created an event
+    // Handle operation state
     LaunchedEffect(operationState) {
-        if (isCreating && operationState is OperationState.Success) {
-            onEventCreated()
+        if (isUpdating && operationState is OperationState.Success) {
+            onEventUpdated()
         }
     }
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Créer un événement") },
+                title = { Text("Modifier l'événement") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                    }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { showDeleteDialog = true }
+                    ) {
+                        Icon(
+                            Icons.Default.Delete,
+                            contentDescription = "Supprimer",
+                            tint = MaterialTheme.colorScheme.error
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -203,8 +157,92 @@ fun AddEventScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
-                        
-                        if (selectedPhotos.isEmpty()) {
+
+                        // Show new photos if selected
+                        if (newPhotos.isNotEmpty()) {
+                            Text(
+                                "Nouvelles photos",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                newPhotos.take(3).forEach { uri ->
+                                    AsyncImage(
+                                        model = uri,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .aspectRatio(1f)
+                                            .clip(RoundedCornerShape(12.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                            }
+
+                            if (newPhotos.size > 3) {
+                                Text(
+                                    "+${newPhotos.size - 3} photo(s)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            TextButton(onClick = { newPhotos = emptyList() }) {
+                                Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(4.dp))
+                                Text("Annuler nouvelles photos")
+                            }
+                        }
+
+                        // Show existing photos
+                        if (existingPhotoUrls.isNotEmpty()) {
+                            if (newPhotos.isNotEmpty()) {
+                                Text(
+                                    "Photos existantes",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                existingPhotoUrls.take(3).forEach { url ->
+                                    AsyncImage(
+                                        model = url,
+                                        contentDescription = null,
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .aspectRatio(1f)
+                                            .clip(RoundedCornerShape(12.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                            }
+
+                            if (existingPhotoUrls.size > 3) {
+                                Text(
+                                    "+${existingPhotoUrls.size - 3} photo(s)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(onClick = { existingPhotoUrls = emptyList() }) {
+                                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Supprimer existantes")
+                                }
+                            }
+                        }
+
+                        // Show Unsplash preview or load button when no photos
+                        if (existingPhotoUrls.isEmpty() && newPhotos.isEmpty()) {
                             Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                                 if (unsplashPhoto != null) {
                                     AsyncImage(
@@ -216,6 +254,14 @@ fun AddEventScreen(
                                             .clip(RoundedCornerShape(12.dp)),
                                         contentScale = ContentScale.Crop
                                     )
+                                    OutlinedButton(
+                                        onClick = { unsplashVm.loadRandomPhoto() },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Icon(Icons.Default.Refresh, contentDescription = null)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Nouvelle image aléatoire")
+                                    }
                                 } else if (unsplashLoading) {
                                     Box(modifier = Modifier
                                         .fillMaxWidth()
@@ -232,78 +278,25 @@ fun AddEventScreen(
                                         Text("Charger une image aléatoire")
                                     }
                                 }
-
-                                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    OutlinedButton(onClick = {
-                                        photoPickerLauncher.launch(
-                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                        )
-                                    }, modifier = Modifier.weight(1f)) {
-                                        Icon(Icons.Default.AddPhotoAlternate, contentDescription = null)
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("Ajouter des photos")
-                                    }
-
-                                    OutlinedButton(onClick = { unsplashVm.loadRandomPhoto() }, modifier = Modifier.weight(1f)) {
-                                        Icon(Icons.Default.Refresh, contentDescription = null)
-                                        Spacer(Modifier.width(8.dp))
-                                        Text("Nouvelle image")
-                                    }
-                                }
                             }
-                        } else {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                selectedPhotos.take(3).forEach { uri ->
-                                    AsyncImage(
-                                        model = uri,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .weight(1f)
-                                            .aspectRatio(1f)
-                                            .clip(RoundedCornerShape(12.dp)),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                }
-                            }
-                            
-                            if (selectedPhotos.size > 3) {
-                                Text(
-                                    "+${selectedPhotos.size - 3} photo(s)",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                        }
+
+                        // Always show add photos button
+                        OutlinedButton(
+                            onClick = {
+                                photoPickerLauncher.launch(
+                                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                                 )
-                            }
-                            
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                TextButton(
-                                    onClick = {
-                                        photoPickerLauncher.launch(
-                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                                        )
-                                    }
-                                ) {
-                                    Icon(Icons.Default.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Modifier")
-                                }
-                                
-                                TextButton(
-                                    onClick = { selectedPhotos = emptyList() }
-                                ) {
-                                    Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(4.dp))
-                                    Text("Supprimer")
-                                }
-                            }
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(Icons.Default.AddPhotoAlternate, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text(if (newPhotos.isEmpty()) "Ajouter des photos" else "Ajouter plus de photos")
                         }
                     }
                 }
-                
+
                 // Title field
                 OutlinedTextField(
                     value = title,
@@ -320,7 +313,7 @@ fun AddEventScreen(
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true
                 )
-                
+
                 // Description field
                 OutlinedTextField(
                     value = description,
@@ -340,7 +333,7 @@ fun AddEventScreen(
                     minLines = 4,
                     maxLines = 8
                 )
-                
+
                 // Date & Time picker
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -367,7 +360,7 @@ fun AddEventScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
-                        
+
                         OutlinedButton(
                             onClick = { showDatePicker = true },
                             modifier = Modifier.fillMaxWidth()
@@ -375,21 +368,20 @@ fun AddEventScreen(
                             Icon(Icons.Default.CalendarToday, contentDescription = null)
                             Spacer(Modifier.width(8.dp))
                             Text(
-                                selectedDate?.let { dateFormatter.format(Date(it)) }
-                                    ?: "Sélectionner la date et l'heure"
+                                selectedDate?.let { dateFormatter.format(Date(it)) } ?: "Sélectionner une date"
                             )
                         }
-                        
+
                         if (dateError != null) {
                             Text(
                                 dateError!!,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
                     }
                 }
-                
+
                 // City dropdown
                 ExposedDropdownMenuBox(
                     expanded = showCityDropdown,
@@ -401,7 +393,7 @@ fun AddEventScreen(
                         readOnly = true,
                         label = { Text("Ville") },
                         leadingIcon = {
-                            Icon(Icons.Default.LocationOn, contentDescription = null)
+                            Icon(Icons.Default.LocationCity, contentDescription = null)
                         },
                         trailingIcon = {
                             ExposedDropdownMenuDefaults.TrailingIcon(expanded = showCityDropdown)
@@ -410,10 +402,10 @@ fun AddEventScreen(
                         supportingText = cityError?.let { { Text(it) } },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true),
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
                         colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors()
                     )
-                    
+
                     ExposedDropdownMenu(
                         expanded = showCityDropdown,
                         onDismissRequest = { showCityDropdown = false }
@@ -425,15 +417,12 @@ fun AddEventScreen(
                                     selectedCityId = city.id
                                     cityError = null
                                     showCityDropdown = false
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Default.LocationCity, contentDescription = null)
                                 }
                             )
                         }
                     }
                 }
-                
+
                 // Event types
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -460,11 +449,11 @@ fun AddEventScreen(
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
-                        
+
                         FlowRow(
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.fillMaxWidth()
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             eventTypes.forEach { type ->
                                 FilterChip(
@@ -490,32 +479,47 @@ fun AddEventScreen(
                                 )
                             }
                         }
-                        
+
                         if (typeError != null) {
                             Text(
                                 typeError!!,
-                                color = MaterialTheme.colorScheme.error,
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error
                             )
                         }
                     }
                 }
-                
-                // Spacer for button
-                Spacer(Modifier.height(80.dp))
-            }
-            
-            // Create button (fixed at bottom)
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 8.dp
-            ) {
+
+                // Error message
+                if (operationState is OperationState.Error) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Error,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                            Text(
+                                (operationState as OperationState.Error).message,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
+
+                // Update button
                 Button(
                     onClick = {
-                        // Validation
                         var hasError = false
 
                         if (title.isBlank()) {
@@ -544,24 +548,27 @@ fun AddEventScreen(
                         }
 
                         if (!hasError) {
-                            isCreating = true
+                            isUpdating = true
                             val selectedCity = cities.find { it.id == selectedCityId }
-                            eventViewModel.createEvent(
+                            eventViewModel.updateEvent(
+                                eventId = eventId,
                                 title = title,
                                 description = description,
                                 date = Timestamp(Date(selectedDate!!)),
                                 cityId = selectedCityId!!,
                                 cityName = selectedCity?.name ?: "",
                                 typeIds = selectedTypeIds.toList(),
-                                photoUris = selectedPhotos,
-                                unsplashPhotoUrl = if (selectedPhotos.isEmpty()) unsplashPhoto?.urls?.regular else null
+                                existingPhotoUrls = existingPhotoUrls,
+                                newPhotoUris = newPhotos,
+                                unsplashPhotoUrl = if (existingPhotoUrls.isEmpty() && newPhotos.isEmpty())
+                                    unsplashPhoto?.urls?.regular else null
                             )
                         }
                     },
                     enabled = operationState !is OperationState.Loading,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(vertical = 16.dp),
                     contentPadding = PaddingValues(vertical = 16.dp)
                 ) {
                     if (operationState is OperationState.Loading) {
@@ -570,37 +577,37 @@ fun AddEventScreen(
                             color = MaterialTheme.colorScheme.onPrimary,
                             strokeWidth = 2.dp
                         )
-                        Spacer(Modifier.width(12.dp))
-                        Text("Création en cours...")
+                        Spacer(Modifier.width(8.dp))
+                        Text("Mise à jour en cours...")
                     } else {
                         Icon(Icons.Default.Check, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Créer l'événement")
+                        Text("Mettre à jour l'événement")
                     }
                 }
+
+                Spacer(modifier = Modifier.height(32.dp))
             }
         }
     }
-    
+
     // Date Picker Dialog
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(
-            initialSelectedDateMillis = selectedDate ?: System.currentTimeMillis()
+            initialSelectedDateMillis = selectedDate
         )
-        
+
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        datePickerState.selectedDateMillis?.let {
-                            selectedDate = it
-                            dateError = null
-                        }
-                        showDatePicker = false
-                        showTimePicker = true
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let {
+                        selectedDate = it
+                        dateError = null
                     }
-                ) {
+                    showDatePicker = false
+                    showTimePicker = true
+                }) {
                     Text("Suivant")
                 }
             },
@@ -613,14 +620,15 @@ fun AddEventScreen(
             DatePicker(state = datePickerState)
         }
     }
-    
+
     // Time Picker Dialog
     if (showTimePicker) {
+        val calendar = remember { Calendar.getInstance().apply { timeInMillis = selectedDate ?: System.currentTimeMillis() } }
         val timePickerState = rememberTimePickerState(
-            initialHour = 12,
-            initialMinute = 0
+            initialHour = calendar.get(Calendar.HOUR_OF_DAY),
+            initialMinute = calendar.get(Calendar.MINUTE)
         )
-        
+
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
             title = { Text("Sélectionner l'heure") },
@@ -628,19 +636,18 @@ fun AddEventScreen(
                 TimePicker(state = timePickerState)
             },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        selectedDate?.let { dateMillis ->
-                            val calendar = Calendar.getInstance().apply {
-                                timeInMillis = dateMillis
-                                set(Calendar.HOUR_OF_DAY, timePickerState.hour)
-                                set(Calendar.MINUTE, timePickerState.minute)
-                            }
-                            selectedDate = calendar.timeInMillis
+                TextButton(onClick = {
+                    selectedDate?.let { dateMillis ->
+                        val newCalendar = Calendar.getInstance().apply {
+                            timeInMillis = dateMillis
+                            set(Calendar.HOUR_OF_DAY, timePickerState.hour)
+                            set(Calendar.MINUTE, timePickerState.minute)
+                            set(Calendar.SECOND, 0)
                         }
-                        showTimePicker = false
+                        selectedDate = newCalendar.timeInMillis
                     }
-                ) {
+                    showTimePicker = false
+                }) {
                     Text("OK")
                 }
             },
@@ -651,25 +658,40 @@ fun AddEventScreen(
             }
         )
     }
-    
-    // Error state
-    if (operationState is OperationState.Error) {
+
+    // Delete Confirmation Dialog
+    if (showDeleteDialog) {
         AlertDialog(
-            onDismissRequest = { eventViewModel.resetOperationState() },
-            title = { Text("Erreur") },
-            text = { Text((operationState as OperationState.Error).message) },
-            confirmButton = {
-                TextButton(onClick = { eventViewModel.resetOperationState() }) {
-                    Text("OK")
-                }
-            },
+            onDismissRequest = { showDeleteDialog = false },
             icon = {
                 Icon(
-                    Icons.Default.Error,
+                    Icons.Default.Delete,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.error
                 )
+            },
+            title = { Text("Supprimer l'événement ?") },
+            text = { Text("Cette action est irréversible. L'événement sera définitivement supprimé.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        eventViewModel.deleteEvent(eventId)
+                        onNavigateBack()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Supprimer")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Annuler")
+                }
             }
         )
     }
 }
+

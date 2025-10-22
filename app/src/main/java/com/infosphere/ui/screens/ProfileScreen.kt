@@ -35,6 +35,7 @@ fun ProfileScreen(
     userProfileViewModel: UserProfileViewModel,
     eventViewModel: EventViewModel,
     onSignOut: () -> Unit,
+    onEventClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
@@ -309,7 +310,7 @@ fun ProfileScreen(
                             CompactEventCard(
                                 event = event,
                                 eventTypes = userEventTypes,
-                                onClick = { /* Navigate to edit */ }
+                                onClick = { onEventClick(event.id) }
                             )
                         }
                     }
@@ -351,7 +352,7 @@ fun ProfileScreen(
                             CompactEventCard(
                                 event = event,
                                 eventTypes = userEventTypes,
-                                onClick = { /* Navigate to edit */ }
+                                onClick = { /* Événements passés non cliquables */ }
                             )
                         }
                     }
