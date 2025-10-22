@@ -46,4 +46,27 @@ class CityRepository {
             Result.failure(e)
         }
     }
+
+    suspend fun addCityIfNotExists(city: String, region: String, country: String) {
+        val db = FirebaseFirestore.getInstance()
+        val citiesCollection = db.collection("cities")
+
+        val existing = citiesCollection
+            .whereEqualTo("name", city)
+            .whereEqualTo("region", region)
+            .whereEqualTo("country", country)
+            .get()
+            .await()
+
+        if (existing.isEmpty) {
+            // Ajoute la ville si elle n’existe pas
+            citiesCollection.add(
+                mapOf(
+                    "name" to city,
+                    "region" to region,
+                    "country" to country
+                )
+            ).await()
+        }
+    }
 }

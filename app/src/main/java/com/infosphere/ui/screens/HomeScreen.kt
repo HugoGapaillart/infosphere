@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,7 +26,12 @@ import com.infosphere.viewmodel.AuthViewModel
 import com.infosphere.viewmodel.EventViewModel
 import com.infosphere.viewmodel.UserProfileViewModel
 import java.util.Locale
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.Priority
+import com.infosphere.repository.CityRepository
+import com.google.android.gms.tasks.CancellationTokenSource
+import kotlinx.coroutines.tasks.await
 
 @Composable
 fun HomeScreen(
@@ -44,7 +48,6 @@ fun HomeScreen(
 
     var isRefreshing by remember { mutableStateOf(false) }
 
-    // --- Contexte + localisation ---
     val context = LocalContext.current
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     var cityName by remember { mutableStateOf<String?>(null) }
@@ -56,23 +59,51 @@ fun HomeScreen(
         hasPermission = granted
     }
 
-    // Demande la permission
     LaunchedEffect(Unit) {
         locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
     }
 
-    // Si la permission est accordée → récupère la ville
     LaunchedEffect(hasPermission) {
-        if (hasPermission) {
-            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
-                if (location != null) {
+        if (!hasPermission) return@LaunchedEffect
+
+        val permissionState = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+
+        if (permissionState == PackageManager.PERMISSION_GRANTED) {
+            try {
+                val location = fusedLocationClient
+                    .getCurrentLocation(
+                        Priority.PRIORITY_HIGH_ACCURACY,
+                        CancellationTokenSource().token // obligatoire pour await()
+                    )
+                    .await() // suspend function
+
+                location?.let {
                     val geocoder = Geocoder(context, Locale.getDefault())
-                    val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-                    cityName = addresses?.firstOrNull()?.locality ?: "Ville inconnue"
-                } else {
-                    cityName = "Localisation indisponible"
-                }
+                    val addresses = geocoder.getFromLocation(it.latitude, it.longitude, 1)
+                    val address = addresses?.firstOrNull()
+
+                    val city = address?.locality ?: return@let
+                    val region = address?.adminArea ?: ""
+                    val country = address?.countryName ?: ""
+
+                    cityName = "$city"
+
+                    // Appel suspendable possible ici
+                    CityRepository().addCityIfNotExists(city, region, country)
+                } ?: run { cityName = "Localisation indisponible" }
+
+            } catch (e: SecurityException) {
+                Log.e("HomeScreen", "Erreur de permission : ${e.message}")
+                cityName = "Permission refusée"
+            } catch (e: Exception) {
+                Log.e("HomeScreen", "Erreur localisation : ${e.message}")
+                cityName = "Erreur localisation"
             }
+        } else {
+            cityName = "Permission refusée"
         }
     }
 
@@ -80,6 +111,33 @@ fun HomeScreen(
         user?.selectedCityIds?.let { cityIds ->
             if (cityIds.isNotEmpty()) {
                 eventViewModel.loadEventsByCities(cityIds)
+            }
+        }
+    }
+
+    var currentCityId by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(cityName) {
+        cityName?.let { fullName ->
+            val parts = fullName.split(",") // "Paris, Île-de-France, France"
+            val city = parts.firstOrNull() ?: return@let
+
+            // Cherche la ville en base et récupère son ID
+            val result = CityRepository().searchCities(city)
+            result.onSuccess { cities ->
+                val cityObj = cities.firstOrNull()
+                currentCityId = cityObj?.id
+
+                // Charge les événements pour la ville actuelle + villes favorites
+                val cityIds = mutableListOf<String>()
+                currentCityId?.let { cityIds.add(it) }
+                user?.selectedCityIds?.let { cityIds.addAll(it) }
+
+                if (cityIds.isNotEmpty()) {
+                    eventViewModel.loadEventsByCities(cityIds.distinct())
+                }
+            }.onFailure { e ->
+                Log.e("HomeScreen", "Erreur récupération ville actuelle : ${e.message}")
             }
         }
     }
@@ -94,10 +152,11 @@ fun HomeScreen(
             isRefreshing = isRefreshing,
             onRefresh = {
                 isRefreshing = true
-                user?.selectedCityIds?.let { cityIds ->
-                    if (cityIds.isNotEmpty()) {
-                        eventViewModel.loadEventsByCities(cityIds)
-                    }
+                val cityIdsToLoad = mutableListOf<String>()
+                currentCityId?.let { cityIdsToLoad.add(it) }
+                user?.selectedCityIds?.let { cityIdsToLoad.addAll(it) }
+                if (cityIdsToLoad.isNotEmpty()) {
+                    eventViewModel.loadEventsByCities(cityIdsToLoad.distinct())
                 }
                 isRefreshing = false
             }
@@ -143,14 +202,68 @@ fun HomeScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
-                            items(events, key = { it.id }) { event ->
-                                EventCard(
-                                    event = event,
-                                    eventTypes = eventTypes,
-                                    onClick = onEventClick,
-                                )
+                            // --- Événements de la ville actuelle ---
+                            currentCityId?.let { cityId ->
+                                val cityEvents = events.filter { it.cityId == cityId }
+                                if (cityEvents.isNotEmpty()) {
+                                    item {
+                                        Text(
+                                            text = "Événements de la ville dans laquelle vous êtes",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                                        )
+                                    }
+                                    items(cityEvents, key = { it.id }) { event ->
+                                        EventCard(
+                                            event = event,
+                                            eventTypes = eventTypes,
+                                            onClick = onEventClick,
+                                        )
+                                    }
+                                }
+                            }
+
+                            // --- Événements des villes favorites ---
+                            val favoriteCityEvents = user?.selectedCityIds?.let { cityIds ->
+                                events.filter { it.cityId in cityIds && it.cityId != currentCityId }
+                            } ?: emptyList()
+
+                            if (favoriteCityEvents.isNotEmpty()) {
+                                item {
+                                    Text(
+                                        text = "Événements dans vos villes favorites",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                                    )
+                                }
+                                items(favoriteCityEvents, key = { it.id }) { event ->
+                                    EventCard(
+                                        event = event,
+                                        eventTypes = eventTypes,
+                                        onClick = onEventClick,
+                                    )
+                                }
+                            }
+
+                            // --- Aucun événement ---
+                            if ((currentCityId == null || events.none { it.cityId == currentCityId }) &&
+                                favoriteCityEvents.isEmpty()
+                            ) {
+                                item {
+                                    Box(
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = "Aucun événement à venir",
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
                             }
                         }
+
                     }
                 }
             }
