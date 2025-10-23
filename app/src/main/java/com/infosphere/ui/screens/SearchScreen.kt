@@ -46,7 +46,17 @@ fun SearchScreen(
     var expandedCity by remember { mutableStateOf(false) }
     var hasSearched by remember { mutableStateOf(false) }
 
-    Scaffold() { paddingValues ->
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Rechercher") },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
+            )
+        }
+    ) { paddingValues ->
         Column(
             modifier = modifier
                 .fillMaxSize()
@@ -85,9 +95,10 @@ fun SearchScreen(
                             readOnly = true,
                             modifier = Modifier
                                 .fillMaxWidth()
+                                .height(50.dp)
                                 .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable, enabled = true),
                             placeholder = { Text("Sélectionner une ville") },
-                            trailingIcon = { 
+                            trailingIcon = {
                                 Row(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
@@ -145,7 +156,7 @@ fun SearchScreen(
                         }
                     }
                     
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     
                     // Scrollable horizontal chips
                     LazyRow(
@@ -189,7 +200,7 @@ fun SearchScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(52.dp),
+                            .height(50.dp),
                         enabled = selectedCityId != null,
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
@@ -242,10 +253,7 @@ fun SearchScreen(
                         }
                         
                         // Results List with compact horizontal cards
-                        LazyColumn(
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
+                        LazyRow() {
                             items(searchResults, key = { it.id }) { event ->
                                 EventCard(
                                     event = event,
