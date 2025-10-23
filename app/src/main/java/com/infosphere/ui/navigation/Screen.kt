@@ -5,8 +5,15 @@ sealed class Screen(val route: String) {
     object Home : Screen("home")
     object Search : Screen("search")
     object AddEvent : Screen("add_event")
+    object EditEvent : Screen("edit_event/{eventId}") {
+        fun createRoute(eventId: String) = "edit_event/$eventId"
+    }
     object Profile : Screen("profile")
     object EventDetail : Screen("event_detail/{eventId}") {
         fun createRoute(eventId: String) = "event_detail/$eventId"
+    }
+    object GameMenu: Screen("game_menu")
+    object GameScreen: Screen("game_screen/{modeName}") {
+        fun createRoute(modeName: String) = "game_screen/$modeName"
     }
 }

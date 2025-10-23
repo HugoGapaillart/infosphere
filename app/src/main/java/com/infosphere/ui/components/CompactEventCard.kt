@@ -50,6 +50,7 @@ fun CompactEventCard(
                     .weight(0.3f)
                     .fillMaxHeight()
                     .aspectRatio(1f)
+                    .padding(start = 8.dp)
             ) {
                 AsyncImage(
                     model = event.photoUrls.firstOrNull() ?: R.drawable.image_placeholder,

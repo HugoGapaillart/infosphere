@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import com.infosphere.models.Event
+import com.infosphere.repository.AuthRepository
 import com.infosphere.viewmodel.EventViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -28,12 +29,16 @@ fun EventDetailScreen(
     eventId: String,
     eventViewModel: EventViewModel,
     onNavigateBack: () -> Unit,
+    onEditEvent: (Event, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val allEventTypes by eventViewModel.allEventTypes.collectAsStateWithLifecycle()
     val eventTypesMap = remember(allEventTypes) {
         allEventTypes.associateBy { it.id }
     }
+
+    val authRepository = remember { AuthRepository() }
+    val currentUserId = authRepository.getCurrentUser()?.uid
 
     var event by remember { mutableStateOf<Event?>(null) }
     var isLoading by remember { mutableStateOf(true) }
@@ -67,6 +72,20 @@ fun EventDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Retour")
+                    }
+                },
+                actions = {
+                    // Show edit button only if current user is the creator
+                    if (event != null && currentUserId != null && event!!.createdBy == currentUserId) {
+                        IconButton(
+                            onClick = { onEditEvent(event!!, eventId) }
+                        ) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Modifier",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

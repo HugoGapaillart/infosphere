@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
+import com.infosphere.ui.components.AvatarEasterEgg
 import com.infosphere.ui.components.EmptyState
 import com.infosphere.ui.components.CompactEventCard
 import com.infosphere.viewmodel.AuthViewModel
@@ -28,10 +30,12 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
+    navController: NavController,
     authViewModel: AuthViewModel,
     userProfileViewModel: UserProfileViewModel,
     eventViewModel: EventViewModel,
     onSignOut: () -> Unit,
+    onEventClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val currentUser by authViewModel.currentUser.collectAsStateWithLifecycle()
@@ -43,8 +47,7 @@ fun ProfileScreen(
 
     var showCityDialog by remember { mutableStateOf(false) }
     val dateFormatter = remember { SimpleDateFormat("dd MMM yyyy", Locale.FRENCH) }
-    
-    // Load user events
+
     LaunchedEffect(Unit) {
         eventViewModel.loadUserEvents()
     }
@@ -83,23 +86,8 @@ fun ProfileScreen(
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // Avatar
-                    Surface(
-                        modifier = Modifier.size(64.dp),
-                        shape = MaterialTheme.shapes.large,
-                        color = MaterialTheme.colorScheme.primary
-                    ) {
-                        Box(
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                Icons.Default.Person,
-                                contentDescription = null,
-                                modifier = Modifier.size(36.dp),
-                                tint = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                    }
-                    
+                    AvatarEasterEgg(navController)
+
                     // User details
                     Column(
                         verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -322,7 +310,7 @@ fun ProfileScreen(
                             CompactEventCard(
                                 event = event,
                                 eventTypes = userEventTypes,
-                                onClick = { /* Navigate to edit */ }
+                                onClick = { onEventClick(event.id) }
                             )
                         }
                     }
@@ -364,7 +352,7 @@ fun ProfileScreen(
                             CompactEventCard(
                                 event = event,
                                 eventTypes = userEventTypes,
-                                onClick = { /* Navigate to edit */ }
+                                onClick = { /* Événements passés non cliquables */ }
                             )
                         }
                     }
