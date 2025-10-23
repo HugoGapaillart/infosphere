@@ -500,19 +500,7 @@ fun AddEventScreen(
                         }
                     }
                 }
-                
-                // Spacer for button
-                Spacer(Modifier.height(80.dp))
-            }
-            
-            // Create button (fixed at bottom)
-            Surface(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surface,
-                shadowElevation = 8.dp
-            ) {
+
                 Button(
                     onClick = {
                         // Validation
