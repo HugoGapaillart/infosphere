@@ -21,6 +21,7 @@ import com.infosphere.viewmodel.EventViewModel
 import com.infosphere.viewmodel.OperationState
 import com.infosphere.viewmodel.UserProfileViewModel
 import com.infosphere.ui.components.CompactEventCard
+import com.infosphere.ui.components.EventCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -246,9 +247,10 @@ fun SearchScreen(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(searchResults, key = { it.id }) { event ->
-                                CompactEventCard(
+                                EventCard(
                                     event = event,
-                                    onClick = { onEventClick(event.id) }
+                                    eventTypes = eventTypes,
+                                    onClick = { onEventClick(event.id) },
                                 )
                             }
                         }
