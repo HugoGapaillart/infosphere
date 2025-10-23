@@ -27,6 +27,9 @@ import com.infosphere.viewmodel.EventViewModel
 import com.infosphere.viewmodel.UserProfileViewModel
 import java.util.Locale
 import android.content.pm.PackageManager
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.ui.graphics.Color
 import androidx.core.content.ContextCompat
 import com.google.android.gms.location.Priority
 import com.infosphere.repository.CityRepository
@@ -76,9 +79,9 @@ fun HomeScreen(
                 val location = fusedLocationClient
                     .getCurrentLocation(
                         Priority.PRIORITY_HIGH_ACCURACY,
-                        CancellationTokenSource().token // obligatoire pour await()
+                        CancellationTokenSource().token
                     )
-                    .await() // suspend function
+                    .await()
 
                 location?.let {
                     val geocoder = Geocoder(context, Locale.getDefault())
@@ -119,7 +122,7 @@ fun HomeScreen(
 
     LaunchedEffect(cityName) {
         cityName?.let { fullName ->
-            val parts = fullName.split(",") // "Paris, Île-de-France, France"
+            val parts = fullName.split(",")
             val city = parts.firstOrNull() ?: return@let
 
             // Cherche la ville en base et récupère son ID
@@ -145,7 +148,7 @@ fun HomeScreen(
     Log.d("EventViewModel", "Fetched ${events}")
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Accueil") }) }
+        topBar = { TopAppBar(modifier = Modifier.height(75.dp), title = { Text("Accueil") }) }
     ) { paddingValues ->
         PullToRefreshBox(
             modifier = modifier.padding(paddingValues),
@@ -163,23 +166,43 @@ fun HomeScreen(
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
 
-                // Message de bienvenue
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
                 ) {
-                    Text(
-                        text = buildString {
-                            append("Bonjour, ${currentUser?.displayName ?: currentUser?.email ?: "Utilisateur"} !")
-                            if (cityName != null) append("\nVous êtes à $cityName")
-                        },
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(16.dp)
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Bonjour, ${currentUser?.displayName ?: currentUser?.email ?: "Utilisateur"} !",
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+
+                        if (cityName != null) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = "Localisation",
+                                    tint = Color.Red
+                                )
+                                Text(
+                                    text = cityName ?: "",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = Color.Black
+                                )
+                            }
+                        }
+                    }
                 }
 
-                // Vérification des villes sélectionnées
                 if (user?.selectedCityIds.isNullOrEmpty()) {
                     EmptyState(
                         message = "Sélectionnez vos villes dans votre profil pour voir les événements",
@@ -202,13 +225,12 @@ fun HomeScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(bottom = 16.dp)
                         ) {
-                            // --- Événements de la ville actuelle ---
                             currentCityId?.let { cityId ->
                                 val cityEvents = events.filter { it.cityId == cityId }
                                 if (cityEvents.isNotEmpty()) {
                                     item {
                                         Text(
-                                            text = "Événements de la ville dans laquelle vous êtes",
+                                            text = "Événements de la ville dans laquelle vous êtes:",
                                             style = MaterialTheme.typography.titleMedium,
                                             modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
                                         )
@@ -223,7 +245,6 @@ fun HomeScreen(
                                 }
                             }
 
-                            // --- Événements des villes favorites ---
                             val favoriteCityEvents = user?.selectedCityIds?.let { cityIds ->
                                 events.filter { it.cityId in cityIds && it.cityId != currentCityId }
                             } ?: emptyList()
@@ -231,7 +252,7 @@ fun HomeScreen(
                             if (favoriteCityEvents.isNotEmpty()) {
                                 item {
                                     Text(
-                                        text = "Événements dans vos villes favorites",
+                                        text = "Événements dans vos villes favorites:",
                                         style = MaterialTheme.typography.titleMedium,
                                         modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
                                     )
@@ -245,7 +266,6 @@ fun HomeScreen(
                                 }
                             }
 
-                            // --- Aucun événement ---
                             if ((currentCityId == null || events.none { it.cityId == currentCityId }) &&
                                 favoriteCityEvents.isEmpty()
                             ) {
