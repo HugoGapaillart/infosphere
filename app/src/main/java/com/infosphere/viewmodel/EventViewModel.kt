@@ -63,7 +63,12 @@ class EventViewModel : ViewModel() {
                     _operationState.value = OperationState.Error(e.message ?: "Erreur inconnue")
                 }
                 .collect { eventList ->
-                    _events.value = eventList
+                    val now = com.google.firebase.Timestamp.now()
+                    val upcomingEvents = eventList
+                        .filter { event -> event.date.seconds > now.seconds }
+                        .sortedBy { it.date.seconds }
+
+                    _events.value = upcomingEvents
                 }
         }
     }
